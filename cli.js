@@ -17,4 +17,4 @@ const cli = meow(`
 	  ponies & rainbows
 `);
 
-console.log(archiprixScraper(cli.input[0] || 'unicorns'));
+archiprixScraper(cli.input[0]);

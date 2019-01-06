@@ -26,7 +26,10 @@
 		""
 	],
 	"dependencies": {
-		"meow": "^5.0.0"
+		"cheerio": "^1.0.0-rc.2",
+		"download-file-sync": "^1.0.4",
+		"meow": "^5.0.0",
+		"puppeteer": "^1.11.0"
 	},
 	"devDependencies": {
 		"ava": "^0.25.0",
