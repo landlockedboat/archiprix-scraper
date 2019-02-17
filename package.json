@@ -1,6 +1,6 @@
 {
 	"name": "archiprix-scraper",
-	"version": "0.0.0",
+	"version": "1.0.0",
 	"description": "Obtain the data from archiprix.org",
 	"license": "MIT",
 	"repository": "vikepic/archiprix-scraper",
