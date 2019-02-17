@@ -2,7 +2,8 @@
 const fs = require('fs');
 const puppeteer = require('puppeteer');
 const $ = require('cheerio');
-const download = require('download-file-sync');
+const download = require('image-downloader');
+const filenamify = require('filenamify');
 
 function createDirSync(dirName) {
 	if (!fs.existsSync(dirName)) {
@@ -10,7 +11,7 @@ function createDirSync(dirName) {
 	}
 }
 
-module.exports = async (input, options = {}) => {
+module.exports = async () => {
 	const url = 'https://www.archiprix.org/2019/?m=22';
 	const browser = await puppeteer.launch();
 	const page = await browser.newPage();
@@ -18,7 +19,7 @@ module.exports = async (input, options = {}) => {
 	await page.waitFor(1000);
 	const html = await page.content();
 	const projectBaseUrl = 'http://www.archiprix.org/2019/?project=';
-	let projectIds = [];
+	const projectIds = [];
 
 	console.log('Getting project Ids');
 	$('.project-thumb', html).each(function () {
@@ -28,30 +29,39 @@ module.exports = async (input, options = {}) => {
 	console.log(`Project ids obtained: ${projectIds.length}`);
 
 	const projectsDir = './projects';
+	const postsDir = projectsDir + '/_posts';
+	const imagesDir = projectsDir + '/images';
 	createDirSync(projectsDir);
+	createDirSync(postsDir);
+	createDirSync(imagesDir);
+	const date = new Date().toISOString().slice(0, 10);
 
-	for (let i = 0; i < 5; ++i) {
+	// Uncomment for iterating through all projects
+	// for (let i = 0; i < projectIds.length; ++i) {
+	/* eslint-disable no-await-in-loop */
+	for (let i = 0; i < 10; ++i) {
 		console.log(`Processing project ${i + 1} out of ${projectIds.length}`);
 		const id = projectIds[i];
 		const projectUrl = projectBaseUrl + id;
-		await page.goto(projectUrl);
-		await page.waitFor(500);
+
+		try {
+			await page.goto(projectUrl);
+			await page.waitFor(500);
+		} catch (error) {
+			console.error(error);
+			continue;
+		}
+
 		const html = await page.content();
 		const title = $('.project-title', html).text();
 		console.log('  > ' + title);
-		const dirTitle = id + '-' + title
-			.replace(/\//, '')
-			.replace(/\s+/g, '-')
-			.toLowerCase();
-		const projectDir = projectsDir + '/' + dirTitle;
-		createDirSync(projectDir);
+		const formattedTitle =
+			filenamify(title.toLowerCase(), {replacement: '-'});
 
-		const projectFilePath = projectDir +
-			'/readme.md'
-		fs.writeFileSync(projectFilePath, '# ' + title);
+		const projectFilePath = postsDir +
+			'/' + date + '-' + formattedTitle + '.md';
 
-		let imageIndex = 1;
-		$('.project-image', html).each(function () {
+		$('.project-image', html).each(async function () {
 			const src = $(this).prop('src');
 			const regex = /(?<=\.\.)\/projects.*(?=\.jpg)/g;
 			const groups = src.match(regex);
@@ -59,27 +69,28 @@ module.exports = async (input, options = {}) => {
 				groups[0] + '_blowup.jpg';
 
 			console.log(`  Downloading ${url}`);
-			const data = download(url);
-			const imageName = id + '-' + imageIndex + '.jpg';
-			const imageFilePath = projectDir +
-				'/' + imageName;
-			if (!fs.existsSync(imageFilePath)) {
-				console.log(`  Downloading ${url}`);
-				fs.writeFileSync(imageFilePath, data);
-				console.log(`  Written into ${imageFilePath}`);
-			} else {
-				console.log(`  ${imageFilePath} already exists`);
-			}
 
+			const imageName = url.match(/[^\s/]*\.jpg/);
+			const imageFilePath = imagesDir +
+				'/' + imageName;
+			const options = {
+				url, dest: imageFilePath
+			};
+			await download.image(options);
 			fs.appendFileSync(projectFilePath,
-				`\n\n[](${imageName})`);
-			++imageIndex;
+				`\n\n![]({{site.url}}/images/${imageName})`);
 		});
 
-		fs.appendFileSync(projectFilePath,'\n\n');
+		let projectText =
+			$('.project-text', html).text();
 
-		const projectText =
-			$('.project-text', html).text()
+		projectText = `---
+layout: post
+title: "${title}"
+---
+# [${title}](${projectUrl})
+${projectText}
+`;
 
 		fs.appendFileSync(projectFilePath, projectText);
 	}

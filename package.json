@@ -14,7 +14,7 @@
 		"node": ">=6"
 	},
 	"scripts": {
-		"test": "xo && ava"
+		"test": "xo"
 	},
 	"files": [
 		"index.js",
@@ -27,12 +27,12 @@
 	],
 	"dependencies": {
 		"cheerio": "^1.0.0-rc.2",
-		"download-file-sync": "^1.0.4",
+		"filenamify": "^2.1.0",
+		"image-downloader": "^3.4.2",
 		"meow": "^5.0.0",
 		"puppeteer": "^1.11.0"
 	},
 	"devDependencies": {
-		"ava": "^0.25.0",
 		"xo": "^0.21.0"
 	}
 }
